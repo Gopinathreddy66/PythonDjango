@@ -48,6 +48,10 @@ def format(
             if abs(number) < cutoff:
                 number = Decimal("0")
 
+        if not number.is_finite():
+            # like NaN or Infinity
+            return str(number)
+
         # Format values with more than 200 digits (an arbitrary cutoff) using
         # scientific notation to avoid high memory usage in {:f}'.format().
         _, digits, exponent = number.as_tuple()
