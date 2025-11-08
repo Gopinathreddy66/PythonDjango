@@ -209,6 +209,29 @@ class Serializer:
         if callable(getattr(self.stream, "getvalue", None)):
             return self.stream.getvalue()
 
+    def _should_include_pk(self, obj):
+        """
+        Determines whether the Primary Key (PK) should be included in the
+        serialized data for the given object, especially when
+        use_natural_primary_keys=True is set.
+        """
+        pk_included = True
+
+        if self.use_natural_primary_keys:
+            natural_key_func = getattr(obj, "natural_key", None)
+
+            if callable(natural_key_func):
+                natural_key_value = natural_key_func()
+
+                is_opt_out = not natural_key_value or not isinstance(
+                    natural_key_value, tuple
+                )
+
+                if not is_opt_out:
+                    pk_included = False
+
+        return pk_included
+
 
 class Deserializer:
     """
@@ -317,12 +340,13 @@ def build_instance(Model, data, db):
         obj = Model(**data)
         obj._state.db = db
         natural_key = obj.natural_key()
-        try:
-            data[Model._meta.pk.attname] = Model._meta.pk.to_python(
-                default_manager.db_manager(db).get_by_natural_key(*natural_key).pk
-            )
-        except Model.DoesNotExist:
-            pass
+        if natural_key is not None:
+            try:
+                data[Model._meta.pk.attname] = Model._meta.pk.to_python(
+                    default_manager.db_manager(db).get_by_natural_key(*natural_key).pk
+                )
+            except Model.DoesNotExist:
+                pass
     return Model(**data)
 
 
