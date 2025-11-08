@@ -841,6 +841,19 @@ class TestChecks(PostgreSQLSimpleTestCase):
         self.assertEqual(errors[0].id, "postgres.E001")
         self.assertIn("max_length", errors[0].msg)
 
+    def test_base_field_check_kwargs(self):
+        class MyField(models.Field):
+            def check(self, **kwargs):
+                assert (
+                    kwargs
+                ), "ArrayField.check kwargs should be passed to its base_field."
+                return []
+
+        class MyModel(PostgreSQLModel):
+            field = ArrayField(MyField())
+
+        self.assertEqual(MyModel.check(databases=["default"]), [])
+
     def test_invalid_base_fields(self):
         class MyModel(PostgreSQLModel):
             field = ArrayField(
