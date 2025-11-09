@@ -304,11 +304,9 @@ class FieldGetDbPrepValueIterableMixin(FieldGetDbPrepValueMixin):
         if contains_expr:
             return ExpressionList(
                 *[
-                    # Expression defaults `str` to field references while
-                    # lookups default them to literal values.
                     (
                         Value(prep_value, self.lhs.output_field)
-                        if isinstance(prep_value, str)
+                        if not hasattr(prep_value, "as_sql")
                         else prep_value
                     )
                     for prep_value in prepared_values
